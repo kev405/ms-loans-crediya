@@ -1,14 +1,13 @@
 package co.com.crediya.model.typeloan;
-import lombok.Builder;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-//import lombok.NoArgsConstructor;
-import lombok.Setter;
 
-@Getter
-@Setter
-//@NoArgsConstructor
-@AllArgsConstructor
-@Builder(toBuilder = true)
-public class TypeLoan {
-}
+import co.com.crediya.model.value.InterestRate;
+import co.com.crediya.model.value.Money;
+
+public record TypeLoan(
+        String id,
+        String name,
+        Money minimumAmount,
+        Money maximumAmount,
+        InterestRate annualInterestRate,
+        boolean automaticValidation
+) {}

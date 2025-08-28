@@ -6,6 +6,7 @@ buildscript {
 		jacocoVersion = '0.8.13'
 		pitestVersion = '1.19.0-rc.1'
         lombokVersion = '1.18.38'
+        mapstructVersion = '1.6.3'
 	}
 }
 
@@ -32,6 +33,67 @@ sonar {
         property "sonar.pitest.reportPaths", "build/reports/pitest/mutations.xml"
         property "sonar.externalIssuesReportPaths", "build/issues.json"
     }
+}
+
+// --- Define la lista de exclusiones UNA SOLA VEZ ---
+def jacocoExclusionPatterns = [
+        'co/com/crediya/MainApplication.class',
+        'co/com/crediya/config/**',
+        '**/*Application*',
+        '**/config/**',
+        '**/dto/**',
+        '**/mapper/**',
+        '**/generated/**'
+]
+
+// Tarea para generar el informe de cobertura unificado
+tasks.register('jacocoRootReport', JacocoReport) {
+    group = "Verification"
+    description = "Generates an aggregate JaCoCo test coverage report."
+
+    executionData.from(fileTree(project.rootDir).include("**/build/jacoco/*.exec"))
+    sourceDirectories.from(files(subprojects.sourceSets.main.allSource.srcDirs))
+
+    // --- AQUÍ APLICAMOS LAS EXCLUSIONES ---
+    classDirectories.setFrom(files(subprojects.sourceSets.main.output).collect {
+        fileTree(dir: it, exclude: jacocoExclusionPatterns)
+    })
+
+    reports {
+        xml.required = true
+        html.required = true
+        csv.required = false
+    }
+}
+
+// Tarea para verificar la cobertura mínima
+tasks.register('jacocoRootCoverageVerification', JacocoCoverageVerification) {
+    group = "Verification"
+    description = "Verifies JaCoCo test coverage minimums."
+    dependsOn jacocoRootReport
+
+    executionData.from(fileTree(project.rootDir).include("**/build/jacoco/*.exec"))
+    sourceDirectories.from(files(subprojects.sourceSets.main.allSource.srcDirs))
+    classDirectories.from(files(subprojects.sourceSets.main.output))
+
+    violationRules {
+        rule {
+            element = 'CLASS'
+            // --- AQUÍ REUTILIZAMOS LA MISMA LISTA DE EXCLUSIONES ---
+            excludes = jacocoExclusionPatterns.collect { it.replace('/', '.').replace('**', '') }
+
+            limit {
+                counter = 'LINE'
+                value = 'COVEREDRATIO'
+                minimum = 0.90
+            }
+        }
+    }
+}
+
+// Haz que la tarea 'build' dependa de la verificación de cobertura
+tasks.named('build') {
+    dependsOn jacocoRootCoverageVerification
 }
 
 apply from: './main.gradle'
