@@ -29,7 +29,7 @@ import org.springframework.web.server.ServerWebInputException;
 
 @Slf4j
 @Component
-@Order(-2) // prioridad más alta que el handler por defecto
+@Order(-2)
 public class GlobalErrorHandler implements ErrorWebExceptionHandler {
 
     private static final HandlerStrategies STRATEGIES =
@@ -83,7 +83,6 @@ public class GlobalErrorHandler implements ErrorWebExceptionHandler {
         pd.setProperty("path", req.path());
         pd.setProperty("timestamp", Instant.now().toString());
 
-        // Errores de campos (Bean Validation / binding)
         if (ex instanceof WebExchangeBindException be) {
             var fieldErrors = be.getFieldErrors().stream()
                     .map(fe -> Map.of(

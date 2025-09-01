@@ -43,7 +43,7 @@ public class LoanUseCase {
                         .switchIfEmpty(Mono.error(new DomainNotFoundException("STATE_PENDING_REVIEW_NOT_FOUND"))))
                 .flatMap(pendingState -> {
                     var loanToSave = new Loan(
-                            null, // id lo puede generar el adapter o la DB
+                            null,
                             loan.amount(),
                             loan.termMonths(),
                             loan.email(),
