@@ -6,31 +6,33 @@ import co.com.crediya.model.exceptions.DomainValidationException;
 import co.com.crediya.model.loan.Loan;
 import co.com.crediya.model.loan.gateways.LoanRepository;
 import co.com.crediya.model.stateloan.gateways.StateLoanRepository;
+import co.com.crediya.model.tx.gateway.TxRunner;
 import co.com.crediya.model.typeloan.TypeLoan;
 import co.com.crediya.model.typeloan.gateways.TypeLoanRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.java.Log;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import java.util.UUID;
-import java.util.logging.Logger;
 
 @RequiredArgsConstructor
+@Log
 public class LoanUseCase {
 
     private final LoanRepository loanRepository;
     private final TypeLoanRepository typeLoanRepository;
     private final StateLoanRepository stateLoanRepository;
     private final CustomerGateway customerGateway;
+    private final TxRunner txRunner;
 
     public static final String DEFAULT_PENDING_STATE_NAME = "PENDING_REVIEW";
-
-    Logger log = Logger.getLogger(LoanUseCase.class.getName());
 
     public Mono<Loan> create(Loan loan) {
          log.info("Creating loan. email= " + loan.email().value() +
                  ", typeLoanId= " + loan.typeLoanId() +
                  ", amount= " + loan.amount().value().toString());
 
-        return customerGateway.existsByEmail(loan.email().value())
+        return txRunner.required(() -> customerGateway.existsByEmail(loan.email().value())
                 .flatMap(exists -> {
                     if (!exists) return Mono.error(new DomainValidationException("CUSTOMER_NOT_FOUND", "No customer found with email: " + loan.email().value()));
                     return Mono.empty();
@@ -52,7 +54,7 @@ public class LoanUseCase {
                     );
                     return loanRepository.save(loanToSave);
                 })
-                .doOnSuccess(saved -> log.info("Loan created id= " + saved.id()));
+                .doOnSuccess(saved -> log.info("Loan created id= " + saved.id())));
     }
 
     private Mono<Void> validateAmountInRange(Loan loan, TypeLoan type) {
@@ -63,5 +65,10 @@ public class LoanUseCase {
             return Mono.error(new DomainValidationException("AMOUNT_OUT_OF_RANGE", "Amount must be between " + min + " and " + max));
         }
         return Mono.empty();
+    }
+
+    public Flux<Loan> getAllLoans() {
+        log.info("Getting all loans");
+        return txRunner.readOnlyMany(loanRepository::findAll);
     }
 }

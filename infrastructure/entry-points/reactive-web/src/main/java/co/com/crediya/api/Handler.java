@@ -1,6 +1,7 @@
 package co.com.crediya.api;
 
 import co.com.crediya.api.dto.loan.CreateLoanRequest;
+import co.com.crediya.api.dto.loan.LoanResponse;
 import co.com.crediya.api.mapper.loan.LoanDTOMapper;
 import co.com.crediya.api.validation.DtoValidator;
 import co.com.crediya.usecase.loan.LoanUseCase;
@@ -18,7 +19,7 @@ import reactor.core.publisher.Mono;
 @Slf4j
 public class Handler {
 
-    private final LoanUseCase createLoan;
+    private final LoanUseCase loanUseCase;
     private final LoanDTOMapper mapper;
     private final DtoValidator validator;
 
@@ -27,7 +28,7 @@ public class Handler {
                 .doOnSubscribe(s -> log.info("POST create loan"))
                 .flatMap(validator::validate)
                 .map(mapper::toDomain)
-                .flatMap(createLoan::create)
+                .flatMap(loanUseCase::create)
                 .map(mapper::toResponse)
                 .flatMap(resp -> ServerResponse.status(HttpStatus.CREATED)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -35,8 +36,9 @@ public class Handler {
     }
 
     public Mono<ServerResponse> getAllLoans(ServerRequest req) {
-        // Implementa cuando lo necesites (paginación/streaming)
-        return ServerResponse.noContent().build();
+        return ServerResponse.ok()
+                .contentType(MediaType.APPLICATION_NDJSON)
+                .body(loanUseCase.getAllLoans().map(mapper::toResponse), LoanResponse.class);
     }
 
     public Mono<ServerResponse> getLoanById(ServerRequest req) {

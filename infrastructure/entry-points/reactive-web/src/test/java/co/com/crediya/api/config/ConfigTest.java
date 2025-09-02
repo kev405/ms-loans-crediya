@@ -2,25 +2,48 @@ package co.com.crediya.api.config;
 
 import co.com.crediya.api.Handler;
 import co.com.crediya.api.RouterRest;
+import co.com.crediya.api.mapper.loan.LoanDTOMapper;
+import co.com.crediya.api.validation.DtoValidator;
+import co.com.crediya.usecase.loan.LoanUseCase;
+import reactor.core.publisher.Flux;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 @ContextConfiguration(classes = {RouterRest.class, Handler.class})
 @WebFluxTest
+@EnableConfigurationProperties(LoanPath.class)
 @Import({CorsConfig.class, SecurityHeadersConfig.class})
 class ConfigTest {
 
     @Autowired
     private WebTestClient webTestClient;
 
+    @MockitoBean
+    private LoanUseCase loanUseCase;
+
+    @MockitoBean
+    private LoanDTOMapper loanDTOMapper;
+
+    @MockitoBean
+    private DtoValidator dtoValidator;
+
+    @BeforeEach
+    void setUp() {
+        Mockito.when(loanUseCase.getAllLoans()).thenReturn(Flux.empty());
+    }
+
     @Test
     void corsConfigurationShouldAllowOrigins() {
         webTestClient.get()
-                .uri("/api/usecase/path")
+                .uri("/api/v1/loans")
                 .exchange()
                 .expectStatus().isOk()
                 .expectHeader().valueEquals("Content-Security-Policy",

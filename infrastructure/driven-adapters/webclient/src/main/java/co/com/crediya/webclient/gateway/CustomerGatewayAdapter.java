@@ -22,6 +22,7 @@ public class CustomerGatewayAdapter implements CustomerGateway {
                 .uri(props.getExistsPath(), email)
                 .retrieve()
                 .bodyToMono(Boolean.class)
-                .onErrorResume(e -> Mono.just(false));
+                .onErrorResume(e -> Mono.just(false))
+                .doOnSuccess(response -> log.info("Petition complete successfully, existsByEmail response: {}", response));
     }
 }

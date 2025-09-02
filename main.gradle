@@ -88,11 +88,24 @@ jacoco {
     reportsDirectory.set(layout.buildDirectory.dir("reports"))
 }
 
+// --- Define la lista de exclusiones UNA SOLA VEZ ---
+def jacocoExclusionPatterns = [
+        'co/com/crediya/MainApplication.class',
+        'co/com/crediya/config/**',
+        '**/*Application*',
+        '**/config/**',
+        '**/dto/**',
+        '**/mapper/**',
+        '**/generated/**'
+]
+
 tasks.register('jacocoMergedReport', JacocoReport) {
     dependsOn = [test, subprojects.jacocoTestReport, pitestReportAggregate]
     additionalSourceDirs.setFrom files(subprojects.sourceSets.main.allSource.srcDirs)
     sourceDirectories.setFrom files(subprojects.sourceSets.main.allSource.srcDirs)
-    classDirectories.setFrom files(subprojects.sourceSets.main.output)
+    classDirectories.setFrom(files(subprojects.sourceSets.main.output).collect {
+        fileTree(dir: it, exclude: jacocoExclusionPatterns)
+    })
     executionData.setFrom project.fileTree(dir: '.', include: '**/build/jacoco/test.exec')
     reports {
         xml.setRequired true
@@ -105,6 +118,33 @@ tasks.withType(JavaCompile).configureEach {
     options.compilerArgs = [
             '-Amapstruct.suppressGeneratorTimestamp=true'
     ]
+}
+
+tasks.register('jacocoCoverageVerification', JacocoCoverageVerification) {
+    group = "Verification"
+    description = "Verifies JaCoCo test coverage minimums."
+    dependsOn jacocoMergedReport
+
+    sourceDirectories.from(files(subprojects.sourceSets.main.allSource.srcDirs))
+    classDirectories.from(files(subprojects.sourceSets.main.output).collect {
+        fileTree(dir: it, exclude: jacocoExclusionPatterns)
+    })
+    executionData.from(project.fileTree(dir: '.', include: '**/build/jacoco/test.exec'))
+
+    violationRules {
+        rule {
+            element = 'BUNDLE'
+            limit {
+                counter = 'LINE'
+                value = 'COVEREDRATIO'
+                minimum = 0.90
+            }
+        }
+    }
+}
+
+tasks.named('build') {
+    dependsOn jacocoCoverageVerification
 }
 
 pitestReportAggregate {

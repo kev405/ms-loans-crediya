@@ -6,7 +6,9 @@ import java.util.Objects;
 
 public record InterestRate(BigDecimal annualPercent) {
     public InterestRate {
-        Objects.requireNonNull(annualPercent, "interest rate is required");
+        if (annualPercent == null) {
+            throw new DomainValidationException("INVALID_INTEREST", "empty");
+        }
         if (annualPercent.compareTo(BigDecimal.ZERO) < 0)
             throw new DomainValidationException("INVALID_INTEREST","interest rate must be >= 0");
     }

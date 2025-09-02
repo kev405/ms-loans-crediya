@@ -7,7 +7,8 @@ import java.util.regex.Pattern;
 public record Email(String value) {
     private static final Pattern P = Pattern.compile("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
     public Email {
-        Objects.requireNonNull(value, "email is required");
+        if (value == null || value.isBlank()) throw new DomainValidationException("INVALID_EMAIL", "empty");
+
         if (!P.matcher(value).matches()) throw new DomainValidationException("INVALID_EMAIL","invalid email format");
     }
 }

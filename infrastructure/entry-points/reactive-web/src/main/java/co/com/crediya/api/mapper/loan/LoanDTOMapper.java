@@ -4,7 +4,6 @@ import org.mapstruct.*;
 import co.com.crediya.api.dto.loan.*;
 import co.com.crediya.model.loan.Loan;
 
-import java.math.BigDecimal;
 
 @Mapper(componentModel = "spring")
 public interface LoanDTOMapper {
