@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: 8081
 spring:
   application:
     name: "Loans"
@@ -11,6 +11,13 @@ spring:
       path: "/h2"
   profiles:
     include: null
+  flyway:
+    enabled: true
+    url: jdbc:postgresql://localhost:5432/ms-loans-crediya
+    user: ${adapters.r2dbc.username}
+    password: ${adapters.r2dbc.password}
+    locations: classpath:db/migration
+    default-schema: public
 management:
   endpoints:
     web:
@@ -22,3 +29,25 @@ management:
         enabled: true
 cors:
   allowed-origins: "http://localhost:4200,http://localhost:8080"
+adapters:
+  auth:
+    base-url: http://localhost:8080
+    exists-path: /api/users/email/{email}
+  r2dbc:
+    host: "localhost"
+    port: 5432
+    database: "ms-loans-crediya"
+    schema: "public"
+    username: "postgres"
+    password: "mysecretpassword"
+routes:
+  paths:
+    loans: /api/v1/loans
+    loansById: /api/v1/loans/{id}
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: alpha
+    tagsSorter: alpha

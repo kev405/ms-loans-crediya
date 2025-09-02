@@ -1,11 +1,23 @@
 package co.com.crediya.config;
 
+import co.com.crediya.model.loan.gateways.LoanRepository;
+import co.com.crediya.model.typeloan.gateways.TypeLoanRepository;
+import co.com.crediya.model.stateloan.gateways.StateLoanRepository;
+import co.com.crediya.model.customer.gateways.CustomerGateway; // si tu LoanUseCase lo usa
+import co.com.crediya.model.tx.gateway.TxRunner;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import java.util.function.Supplier;
+
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
 public class UseCasesConfigTest {
 
@@ -31,14 +43,29 @@ public class UseCasesConfigTest {
     static class TestConfig {
 
         @Bean
-        public MyUseCase myUseCase() {
-            return new MyUseCase();
-        }
-    }
+        LoanRepository loanRepository() { return mock(LoanRepository.class); }
 
-    static class MyUseCase {
-        public String execute() {
-            return "MyUseCase Test";
+        @Bean
+        TypeLoanRepository typeLoanRepository() { return mock(TypeLoanRepository.class); }
+
+        @Bean
+        StateLoanRepository stateLoanRepository() { return mock(StateLoanRepository.class); }
+
+        @Bean
+        CustomerGateway customerGateway() { return mock(CustomerGateway.class); }
+
+        @Bean
+        TxRunner txRunner() {
+            return new TxRunner() {
+                @Override
+                public <T> Mono<T> required(Supplier<Mono<T>> work) {
+                    return work.get();
+                }
+                @Override
+                public <T> Flux<T> requiredMany(Supplier<Flux<T>> action) {
+                    return action.get();
+                }
+            };
         }
     }
 }
