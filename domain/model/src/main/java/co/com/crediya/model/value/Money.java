@@ -7,7 +7,7 @@ import java.util.Objects;
 
 public record Money(BigDecimal value) {
     public Money {
-        if (value == null) throw new DomainValidationException("INVALID_EMAIL", "empty");
+        if (value == null) throw new DomainValidationException("INVALID_MONEY", "empty");
         if (value.signum() < 0) throw new DomainValidationException("INVALID_QUANTITY_MONEY","amount must be >= 0");
         value = value.setScale(2, RoundingMode.HALF_UP);
     }
