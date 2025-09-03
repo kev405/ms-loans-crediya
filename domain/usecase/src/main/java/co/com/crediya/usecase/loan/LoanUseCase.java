@@ -33,10 +33,10 @@ public class LoanUseCase {
                  ", amount= " + loan.amount().value().toString());
 
         return txRunner.required(() -> customerGateway.existsByEmail(loan.email().value())
-                .flatMap(exists -> {
-                    if (!exists) return Mono.error(new DomainValidationException("CUSTOMER_NOT_FOUND", "No customer found with email: " + loan.email().value()));
-                    return Mono.empty();
-                })
+//                .flatMap(exists -> {
+//                    if (!exists) return Mono.error(new DomainValidationException("CUSTOMER_NOT_FOUND", "No customer found with email: " + loan.email().value()));
+//                    return Mono.empty();
+//                })
                 .then(typeLoanRepository.findById(
                                 UUID.fromString(loan.typeLoanId()))
                         .switchIfEmpty(Mono.error(new DomainNotFoundException("TYPE_LOAN_NOT_FOUND"))))
