@@ -31,9 +31,9 @@ public class RouterRest {
 
     @Bean
     @RouterOperations({
-        // POST /api/loans
+        // POST /api/v1/loans
         @RouterOperation(
-                path = "/api/loans",
+                path = "/api/v1/loans",
                 produces = MediaType.APPLICATION_JSON_VALUE,
                 consumes = MediaType.APPLICATION_JSON_VALUE,
                 method = RequestMethod.POST,
@@ -63,9 +63,9 @@ public class RouterRest {
                 )
         ),
 
-        // GET /api/loans  (NDJSON)
+        // GET /api/v1/loans  (NDJSON)
         @RouterOperation(
-                path = "/api/loans",
+                path = "/api/v1/loans",
                 produces = MediaType.APPLICATION_NDJSON_VALUE,
                 method = RequestMethod.GET,
                 beanClass = Handler.class,
@@ -90,7 +90,7 @@ public class RouterRest {
 
         // GET /api/loans/{id}
         @RouterOperation(
-                path = "/api/loans/{id}",
+                path = "/api/v1/loans/{id}",
                 produces = MediaType.APPLICATION_JSON_VALUE,
                 method = RequestMethod.GET,
                 beanClass = Handler.class,

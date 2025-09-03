@@ -8,6 +8,9 @@ dependencies {
     implementation 'org.slf4j:slf4j-api:2.0.13'
     implementation "org.springframework:spring-tx"
     implementation "org.springdoc:springdoc-openapi-starter-webflux-ui:2.6.0"
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+    implementation 'org.springframework.security:spring-security-oauth2-jose'
     implementation "org.mapstruct:mapstruct:$mapstructVersion"
     annotationProcessor "org.mapstruct:mapstruct-processor:$mapstructVersion"
 }

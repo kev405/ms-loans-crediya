@@ -18,6 +18,11 @@ spring:
     password: ${adapters.r2dbc.password}
     locations: classpath:db/migration
     default-schema: public
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://localhost:8080/.well-known/jwks.json
 management:
   endpoints:
     web:
@@ -51,3 +56,9 @@ springdoc:
     path: /swagger-ui.html
     operationsSorter: alpha
     tagsSorter: alpha
+
+logging:
+  level:
+    root: INFO
+    org.springframework.web: DEBUG
+    org.springframework.security: DEBUG
