@@ -2,9 +2,12 @@ package co.com.crediya.api;
 
 import co.com.crediya.api.dto.loan.CreateLoanRequest;
 import co.com.crediya.api.dto.loan.LoanResponse;
+import co.com.crediya.api.dto.pageable.PageResponse;
 import co.com.crediya.api.mapper.loan.LoanDTOMapper;
 import co.com.crediya.api.validation.DtoValidator;
 import co.com.crediya.model.loan.Loan;
+import co.com.crediya.model.pageable.LoanStatus;
+import co.com.crediya.model.pageable.ManualReviewFilter;
 import co.com.crediya.usecase.loan.LoanUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -15,6 +18,10 @@ import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
+import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -64,5 +71,31 @@ public class Handler {
     public Mono<ServerResponse> getLoanById(ServerRequest req) {
         // Implementa cuando lo necesites
         return ServerResponse.noContent().build();
+    }
+
+    public Mono<ServerResponse> list(ServerRequest req) {
+        String search = req.queryParam("search").orElse(null);
+        String statusCsv = req.queryParam("status").orElse(null);
+        String typeId = req.queryParam("typeLoanId").orElse(null);
+        int page = req.queryParam("page").map(Integer::parseInt).orElse(0);
+        int size = req.queryParam("size").map(Integer::parseInt).orElse(20);
+
+        var minAmount = req.queryParam("minAmount").map(BigDecimal::new).orElse(null);
+        var maxAmount = req.queryParam("maxAmount").map(BigDecimal::new).orElse(null);
+
+        Set<LoanStatus> statuses = statusCsv == null || statusCsv.isBlank()
+                ? Set.of(LoanStatus.PENDING_REVIEW, LoanStatus.REJECTED, LoanStatus.MANUAL_REVIEW)
+                : Arrays.stream(statusCsv.split(","))
+                .map(String::trim).filter(s -> !s.isBlank())
+                .map(LoanStatus::valueOf).collect(Collectors.toSet());
+
+        var filter = new ManualReviewFilter(search, statuses, typeId, minAmount, maxAmount);
+
+        return loanUseCase.execute(filter, page, size)
+                .flatMap(p -> ServerResponse.ok()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .bodyValue(new PageResponse<>(
+                                p.content(), p.totalElements(), p.page(), p.size(), p.totalPages()
+                        )));
     }
 }
