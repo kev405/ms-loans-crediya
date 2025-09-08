@@ -1,5 +1,6 @@
 package co.com.crediya.webclient.gateway;
 
+import co.com.crediya.model.customer.UserData;
 import co.com.crediya.model.customer.gateways.CustomerGateway;
 import co.com.crediya.webclient.config.AuthProperties;
 import lombok.RequiredArgsConstructor;
@@ -24,5 +25,10 @@ public class CustomerGatewayAdapter implements CustomerGateway {
                 .bodyToMono(Boolean.class)
                 .onErrorResume(e -> Mono.just(false))
                 .doOnSuccess(response -> log.info("Petition complete successfully, existsByEmail response: {}", response));
+    }
+
+    @Override
+    public Mono<UserData> findByEmail(String email) {
+        return null;
     }
 }

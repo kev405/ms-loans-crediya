@@ -1,6 +1,7 @@
 package co.com.crediya.api;
 
 import co.com.crediya.api.config.LoanPath;
+import co.com.crediya.api.dto.pageable.ManualReviewQuery;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.RouterOperation;
 import org.springdoc.core.annotations.RouterOperations;
@@ -22,6 +23,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 
 @Configuration
 @RequiredArgsConstructor
@@ -111,9 +113,36 @@ public class RouterRest {
                 )
         )
     })
+    @RouterOperation(
+            path = "/api/v1/loans",
+            method = RequestMethod.GET,
+            beanClass = ManualReviewQuery.class,
+            beanMethod = "list",
+            operation = @Operation(
+                    operationId = "listManualReview",
+                    summary = "Listado paginado/filtrable de prestamos para revisión manual",
+                    tags = {"Loans"},
+                    security = { @SecurityRequirement(name = "bearerAuth") },
+                    parameters = {
+                            @Parameter(name="search", description="Filtra por email/nombre (contiene)"),
+                            @Parameter(name="status", description="CSV de estados. Default: PENDING_REVIEW,REJECTED,MANUAL_REVIEW"),
+                            @Parameter(name="typeLoanId", description="Filtro por tipo préstamo"),
+                            @Parameter(name="minAmount"),
+                            @Parameter(name="maxAmount"),
+                            @Parameter(name="page", schema=@Schema(type="integer", defaultValue="0")),
+                            @Parameter(name="size", schema=@Schema(type="integer", defaultValue="20"))
+                    },
+                    responses = {
+                            @ApiResponse(responseCode="200", description="OK"),
+                            @ApiResponse(responseCode="401", description="Unauthorized"),
+                            @ApiResponse(responseCode="403", description="Forbidden")
+                    }
+            )
+    )
     public RouterFunction<ServerResponse> routerFunction(Handler handler) {
         return route(POST(paths.getLoans()), handler::createLoan)
-                .andRoute(GET(paths.getLoans()), handler::getAllLoans)
+//                .andRoute(GET(paths.getLoans()), handler::getAllLoans)
+                .andRoute(GET(paths.getLoans()), handler::list)
                 .andRoute(GET(paths.getLoansById()), handler::getLoanById);
     }
 }

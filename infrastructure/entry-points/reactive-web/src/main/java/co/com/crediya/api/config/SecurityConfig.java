@@ -21,7 +21,10 @@ class SecurityConfig {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(ex -> ex
+                        .pathMatchers("/webjars/swagger-ui/**", "/v3/api-docs/**",
+                                "/actuator/health").permitAll()
                         .pathMatchers(HttpMethod.POST, "/api/v1/loans").hasRole("CUSTOMER")
+                        .pathMatchers(HttpMethod.GET, "/api/v1/loans").hasAnyRole("ADVISOR", "ADMIN")
                         .anyExchange().authenticated())
                 .oauth2ResourceServer(oauth -> oauth.jwt(j -> j.jwtAuthenticationConverter(jwtConverter)))
                 .build();

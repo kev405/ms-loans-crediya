@@ -5,6 +5,9 @@ import co.com.crediya.model.exceptions.DomainNotFoundException;
 import co.com.crediya.model.exceptions.DomainValidationException;
 import co.com.crediya.model.loan.Loan;
 import co.com.crediya.model.loan.gateways.LoanRepository;
+import co.com.crediya.model.pageable.LoanSummary;
+import co.com.crediya.model.pageable.ManualReviewFilter;
+import co.com.crediya.model.pageable.Pageable;
 import co.com.crediya.model.stateloan.gateways.StateLoanRepository;
 import co.com.crediya.model.tx.gateway.TxRunner;
 import co.com.crediya.model.typeloan.TypeLoan;
@@ -70,5 +73,13 @@ public class LoanUseCase {
     public Flux<Loan> getAllLoans() {
         log.info("Getting all loans");
         return txRunner.readOnlyMany(loanRepository::findAll);
+    }
+
+//    public Mono<Pageable<LoanSummary>> execute(ManualReviewFilter filter, int page, int size) {
+//        return txRunner.readOnly(() -> loanRepository.findForManualReview(filter, page, size));
+//    }
+
+    public Mono<Pageable<LoanSummary>> execute(ManualReviewFilter filter, int page, int size) {
+        return txRunner.readOnly(() -> loanRepository.findForManualReview(filter, page, size));
     }
 }
