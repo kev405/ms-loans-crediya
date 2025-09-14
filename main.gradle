@@ -28,6 +28,7 @@ subprojects {
     }
 
     dependencies {
+		implementation platform('software.amazon.awssdk:bom:2.32.13')
         implementation 'io.projectreactor:reactor-core'
         implementation 'io.projectreactor.addons:reactor-extra'
 
@@ -88,7 +89,6 @@ jacoco {
     reportsDirectory.set(layout.buildDirectory.dir("reports"))
 }
 
-// --- Define la lista de exclusiones UNA SOLA VEZ ---
 def jacocoExclusionPatterns = [
         'co/com/crediya/MainApplication.class',
         'co/com/crediya/config/**',

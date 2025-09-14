@@ -13,4 +13,5 @@ dependencies {
     implementation 'org.springframework.security:spring-security-oauth2-jose'
     implementation "org.mapstruct:mapstruct:$mapstructVersion"
     annotationProcessor "org.mapstruct:mapstruct-processor:$mapstructVersion"
+    testImplementation "org.springframework.security:spring-security-test:6.3.3"
 }

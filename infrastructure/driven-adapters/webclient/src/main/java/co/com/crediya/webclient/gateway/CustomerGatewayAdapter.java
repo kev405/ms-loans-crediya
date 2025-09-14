@@ -4,6 +4,8 @@ import co.com.crediya.model.customer.UserData;
 import co.com.crediya.model.customer.gateways.CustomerGateway;
 import co.com.crediya.webclient.config.AuthProperties;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +31,21 @@ public class CustomerGatewayAdapter implements CustomerGateway {
 
     @Override
     public Mono<UserData> findByEmail(String email) {
-        return null;
+
+        return ReactiveSecurityContextHolder.getContext()
+                .flatMap(securityContext -> {
+                    if (securityContext.getAuthentication() instanceof JwtAuthenticationToken) {
+                        String jwtToken = ((JwtAuthenticationToken) securityContext.getAuthentication()).getToken().getTokenValue();
+
+                        return authWebClient.get()
+                                .uri(props.getEmailInfoPath(), email)
+                                .headers(headers -> headers.setBearerAuth(jwtToken))
+                                .retrieve()
+                                .bodyToMono(UserData.class);
+                    } else {
+                        return Mono.error(new IllegalStateException("JWT Token not found in security context"));
+                    }
+                })
+                .doOnError(e -> log.error("Error in findByEmail: {}", e.getMessage()));
     }
 }

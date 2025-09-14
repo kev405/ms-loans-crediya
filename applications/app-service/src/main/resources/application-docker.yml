@@ -1,0 +1,31 @@
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
+spring:
+  flyway:
+    enabled: true
+    url: ${SPRING_FLYWAY_URL}
+    user: ${SPRING_FLYWAY_USER}
+    password: ${SPRING_FLYWAY_PASSWORD}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${SPRING_URI_JWT:http://localhost:8080/.well-known/jwks.json}
+
+adapters:
+  auth:
+    base-url: ${AUTH_BASE_URL:http://auth-service:8080}
+    exists-path: /api/users/email/{email}
+    emailInfoPath: /api/users/email-info/{email}
+  r2dbc:
+    host: ${SPRING_R2DBC_HOST:localhost}
+    port: ${SPRING_R2DBC_PORT:5432}
+    database: ${SPRING_R2DBC_DATABASE:ms-auth-crediya}
+    schema: "public"
+    username: ${SPRING_R2DBC_USERNAME:postgres}
+    password: ${SPRING_R2DBC_PASSWORD:mysecretpassword}
+
+adapter:
+  sqs:
+    region: ${AWS_REGION:us-east-2}
+    queueUrl: ${SQS_QUEUE_URL:http://localhost:4566/000000000000/sample}

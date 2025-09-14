@@ -1,6 +1,7 @@
 package co.com.crediya.config;
 
 import co.com.crediya.model.loan.gateways.LoanRepository;
+import co.com.crediya.model.loan.gateways.Notification;
 import co.com.crediya.model.typeloan.gateways.TypeLoanRepository;
 import co.com.crediya.model.stateloan.gateways.StateLoanRepository;
 import co.com.crediya.model.customer.gateways.CustomerGateway; // si tu LoanUseCase lo usa
@@ -44,6 +45,9 @@ public class UseCasesConfigTest {
 
         @Bean
         LoanRepository loanRepository() { return mock(LoanRepository.class); }
+
+        @Bean
+        Notification notification() { return mock(Notification.class); }
 
         @Bean
         TypeLoanRepository typeLoanRepository() { return mock(TypeLoanRepository.class); }
