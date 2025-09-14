@@ -2,6 +2,7 @@ package co.com.crediya.api.mapper.loan;
 
 import org.mapstruct.*;
 import co.com.crediya.api.dto.loan.*;
+import co.com.crediya.model.loan.ChangeLoanStatus;
 import co.com.crediya.model.loan.Loan;
 
 
@@ -20,5 +21,7 @@ public interface LoanDTOMapper {
     @Mapping(target = "termMonths", expression = "java(domain.termMonths().value())")
     @Mapping(target = "email", expression = "java(domain.email().value())")
     LoanResponse toResponse(Loan domain);
+
+    ChangeLoanStatus toDomain(ChangeStatusLoanRequest req);
 
 }

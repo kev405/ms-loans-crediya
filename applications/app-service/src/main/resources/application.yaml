@@ -10,19 +10,7 @@ spring:
       enabled: true
       path: "/h2"
   profiles:
-    include: null
-  flyway:
-    enabled: true
-    url: jdbc:postgresql://localhost:5432/ms-loans-crediya
-    user: ${adapters.r2dbc.username}
-    password: ${adapters.r2dbc.password}
-    locations: classpath:db/migration
-    default-schema: public
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          jwk-set-uri: http://localhost:8080/.well-known/jwks.json
+    default: "dev"
 management:
   endpoints:
     web:
@@ -32,33 +20,24 @@ management:
     health:
       probes:
         enabled: true
-cors:
-  allowed-origins: "http://localhost:4200,http://localhost:8080"
-adapters:
-  auth:
-    base-url: http://localhost:8080
-    exists-path: /api/users/email/{email}
-  r2dbc:
-    host: "localhost"
-    port: 5432
-    database: "ms-loans-crediya"
-    schema: "public"
-    username: "postgres"
-    password: "mysecretpassword"
 routes:
   paths:
-    loans: /api/v1/loans
-    loansById: /api/v1/loans/{id}
+    loans: "/api/v1/loans"
+    loansById: "/api/v1/loans/{id}"
+    loansPageable: "/api/v1/loans/pageable"
+    loansChangeStatus: "/api/v1/loans/change-status"
 springdoc:
   api-docs:
-    path: /v3/api-docs
+    path: "/v3/api-docs"
   swagger-ui:
-    path: /swagger-ui.html
-    operationsSorter: alpha
-    tagsSorter: alpha
-
+    path: "/swagger-ui.html"
+    operationsSorter: "alpha"
+    tagsSorter: "alpha"
 logging:
   level:
-    root: INFO
-    org.springframework.web: DEBUG
-    org.springframework.security: DEBUG
+    root: "INFO"
+    org.springframework.web: "DEBUG"
+    org.springframework.security: "DEBUG"
+    software.amazon.awssdk.auth: DEBUG
+    software.amazon.awssdk.request: DEBUG
+    software.amazon.awssdk.services.sqs: DEBUG

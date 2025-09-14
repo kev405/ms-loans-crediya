@@ -1,0 +1,34 @@
+spring:
+  flyway:
+    enabled: true
+    url: jdbc:postgresql://localhost:5432/ms-loans-crediya
+    user: ${adapters.r2dbc.username}
+    password: ${adapters.r2dbc.password}
+    locations: classpath:db/migration
+    default-schema: public
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://localhost:8080/.well-known/jwks.json
+
+cors:
+  allowed-origins: "http://localhost:4200,http://localhost:8080"
+
+adapters:
+  auth:
+    base-url: http://localhost:8080
+    exists-path: /api/users/email/{email}
+    emailInfoPath: /api/users/email-info/{email}
+  r2dbc:
+    host: "localhost"
+    port: 5432
+    database: "ms-loans-crediya"
+    schema: "public"
+    username: "postgres"
+    password: "mysecretpassword"
+
+adapter:
+  sqs:
+    region: "us-east-2"
+    queueUrl: "https://sqs.us-east-2.amazonaws.com/328764941205/NOTIFICATION"

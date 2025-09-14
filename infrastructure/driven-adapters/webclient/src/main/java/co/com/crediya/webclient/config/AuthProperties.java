@@ -7,4 +7,5 @@ import lombok.Getter; import lombok.Setter;
 public class AuthProperties {
     private String baseUrl;
     private String existsPath;
+    private String emailInfoPath;
 }

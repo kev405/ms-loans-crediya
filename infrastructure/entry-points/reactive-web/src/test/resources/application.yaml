@@ -2,3 +2,5 @@ routes:
   paths:
     loans: /api/v1/loans
     loansById: /api/v1/loans/{id}
+    loansPageable: /api/v1/loans/pageable
+    loansChangeStatus: "/api/v1/loans/change-status"

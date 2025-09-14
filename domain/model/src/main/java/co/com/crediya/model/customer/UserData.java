@@ -1,3 +1,5 @@
 package co.com.crediya.model.customer;
 
-public record UserData(java.util.UUID id, String name, java.math.BigDecimal salary){}
+import java.math.BigDecimal;
+
+public record UserData(String id, String name, String lastName, BigDecimal salary){}

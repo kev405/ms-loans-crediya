@@ -1,11 +1,12 @@
 package co.com.crediya.api;
 
+import co.com.crediya.api.dto.loan.ChangeStatusLoanRequest;
 import co.com.crediya.api.dto.loan.CreateLoanRequest;
 import co.com.crediya.api.dto.loan.LoanResponse;
 import co.com.crediya.api.dto.pageable.PageResponse;
 import co.com.crediya.api.mapper.loan.LoanDTOMapper;
 import co.com.crediya.api.validation.DtoValidator;
-import co.com.crediya.model.loan.Loan;
+import co.com.crediya.model.loan.gateways.Notification;
 import co.com.crediya.model.pageable.LoanStatus;
 import co.com.crediya.model.pageable.ManualReviewFilter;
 import co.com.crediya.usecase.loan.LoanUseCase;
@@ -31,6 +32,7 @@ public class Handler {
     private final LoanUseCase loanUseCase;
     private final LoanDTOMapper mapper;
     private final DtoValidator validator;
+    private final Notification notification;
 
     public Mono<ServerResponse> createLoan(ServerRequest req) {
         Mono<CreateLoanRequest> body = req.bodyToMono(CreateLoanRequest.class);
@@ -66,6 +68,21 @@ public class Handler {
         return ServerResponse.ok()
                 .contentType(MediaType.APPLICATION_NDJSON)
                 .body(loanUseCase.getAllLoans().map(mapper::toResponse), LoanResponse.class);
+    }
+
+    public Mono<ServerResponse> changeLoanStatus(ServerRequest req) {
+        return req.bodyToMono(ChangeStatusLoanRequest.class)
+                .doOnSubscribe(s -> log.info("PATCH change loan status"))
+                .flatMap(validator::validate)
+                .map(mapper::toDomain)
+                .flatMap(loanUseCase::changeLoanStatus)
+                .flatMap(changed ->
+                        notification.sendMessage(changed).thenReturn(changed.loan())            // seguimos con el Loan para la respuesta
+                )
+                .map(mapper::toResponse)
+                .flatMap(resp -> ServerResponse.ok()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .bodyValue(resp));
     }
 
     public Mono<ServerResponse> getLoanById(ServerRequest req) {
