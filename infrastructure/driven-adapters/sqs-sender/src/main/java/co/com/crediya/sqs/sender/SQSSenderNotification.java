@@ -1,6 +1,5 @@
 package co.com.crediya.sqs.sender;
 
-import co.com.crediya.model.loan.Loan;
 import co.com.crediya.model.loan.LoanStatusChanged;
 import co.com.crediya.model.loan.gateways.Notification;
 import co.com.crediya.sqs.sender.config.SQSSenderProperties;
@@ -15,7 +14,7 @@ import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 @Service
 @Log4j2
 @RequiredArgsConstructor
-public class SQSSender implements Notification {
+public class SQSSenderNotification implements Notification {
     private final SQSSenderProperties properties;
     private final SqsAsyncClient client;
 
@@ -29,7 +28,7 @@ public class SQSSender implements Notification {
 
     private SendMessageRequest buildRequest(String message) {
         return SendMessageRequest.builder()
-                .queueUrl(properties.queueUrl())
+                .queueUrl(properties.queueUrlNotification())
                 .messageBody(message)
                 .build();
     }

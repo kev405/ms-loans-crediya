@@ -1,5 +1,6 @@
 package co.com.crediya.config;
 
+import co.com.crediya.model.loan.gateways.DebtCapacitySQS;
 import co.com.crediya.model.loan.gateways.LoanRepository;
 import co.com.crediya.model.loan.gateways.Notification;
 import co.com.crediya.model.typeloan.gateways.TypeLoanRepository;
@@ -48,6 +49,9 @@ public class UseCasesConfigTest {
 
         @Bean
         Notification notification() { return mock(Notification.class); }
+
+        @Bean
+        DebtCapacitySQS debtCapacitySQS() { return mock(DebtCapacitySQS.class); }
 
         @Bean
         TypeLoanRepository typeLoanRepository() { return mock(TypeLoanRepository.class); }
