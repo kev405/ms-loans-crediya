@@ -28,4 +28,5 @@ adapters:
 adapter:
   sqs:
     region: ${AWS_REGION:us-east-2}
-    queueUrl: ${SQS_QUEUE_URL:http://localhost:4566/000000000000/sample}
+    queueUrlNotification: ${AWS_SQS_QUEUE_URL_NOTIFICATION:https://sqs.us-east-2.amazonaws.com/328764941205/NOTIFICATION}
+    queueUrlDebtCapacity: ${AWS_SQS_QUEUE_URL_DEBT_CAPACITY:https://sqs.us-east-2.amazonaws.com/328764941205/DebtCapacity}

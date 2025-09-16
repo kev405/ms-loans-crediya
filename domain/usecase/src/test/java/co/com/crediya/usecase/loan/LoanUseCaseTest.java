@@ -4,9 +4,8 @@ import co.com.crediya.model.customer.UserData;                   // <-- ajusta s
 import co.com.crediya.model.customer.gateways.CustomerGateway;
 import co.com.crediya.model.exceptions.DomainNotFoundException;
 import co.com.crediya.model.exceptions.DomainValidationException;
-import co.com.crediya.model.loan.ChangeLoanStatus;
-import co.com.crediya.model.loan.Loan;
-import co.com.crediya.model.loan.LoanStatusChanged;
+import co.com.crediya.model.loan.*;
+import co.com.crediya.model.loan.gateways.DebtCapacitySQS;
 import co.com.crediya.model.loan.gateways.LoanRepository;
 import co.com.crediya.model.loan.gateways.Notification;
 import co.com.crediya.model.pageable.LoanSummary;
@@ -43,17 +42,17 @@ import static org.mockito.Mockito.*;
 class LoanUseCaseTest {
 
     LoanRepository loanRepo      = mock(LoanRepository.class);
-    Notification  notification   = mock(Notification.class);
     TypeLoanRepository typeRepo  = mock(TypeLoanRepository.class);
     StateLoanRepository stateRepo= mock(StateLoanRepository.class);
     CustomerGateway customerGw   = mock(CustomerGateway.class);
+    DebtCapacitySQS debtCapacitySQS = mock(DebtCapacitySQS.class);
     TxRunner txRunner            = mock(TxRunner.class);
 
     LoanUseCase useCase;
 
     @BeforeEach
     void setUp() {
-        useCase = new LoanUseCase(loanRepo, notification, typeRepo, stateRepo, customerGw, txRunner);
+        useCase = new LoanUseCase(loanRepo, typeRepo, stateRepo, customerGw, debtCapacitySQS, txRunner);
 
         // TxRunner passthrough
         when(txRunner.required(any())).thenAnswer(inv -> ((Supplier<Mono<?>>)inv.getArgument(0)).get());
@@ -65,6 +64,7 @@ class LoanUseCaseTest {
         when(stateRepo.findByName(anyString())).thenReturn(Mono.never());
         when(stateRepo.findById(any())).thenReturn(Mono.never());
         when(loanRepo.save(any())).thenReturn(Mono.never());
+        when(debtCapacitySQS.sendMessage(any())).thenReturn(Mono.empty());
     }
 
     // ---------------- helpers de dominio ----------------
@@ -108,16 +108,17 @@ class LoanUseCaseTest {
         var input  = loan(email, typeId, new BigDecimal("10000000"), 12, null); // monto fuera de rango
 
         var type = typeLoan(new BigDecimal("1000"), new BigDecimal("5000"));
+        var pending = state(UUID.randomUUID().toString(), LoanUseCase.DEFAULT_PENDING_STATE_NAME);
 
         when(customerGw.existsByEmail(email)).thenReturn(Mono.just(true));
         when(typeRepo.findById(UUID.fromString(typeId))).thenReturn(Mono.just(type));
+        when(stateRepo.findByName(LoanUseCase.DEFAULT_PENDING_STATE_NAME)).thenReturn(Mono.just(pending));
 
         StepVerifier.create(useCase.create(input))
                 .expectError(DomainValidationException.class)
                 .verify();
 
         verify(typeRepo).findById(UUID.fromString(typeId));
-        verify(customerGw).existsByEmail(email);
         verifyNoInteractions(loanRepo);
     }
 
@@ -163,13 +164,19 @@ class LoanUseCaseTest {
         var email   = "ok@example.com";
         var typeId  = UUID.randomUUID().toString();
         var input   = loan(email, typeId, new BigDecimal("3000"), 12, null);
-        var type    = typeLoan(new BigDecimal("1000"), new BigDecimal("5000"));
+        var typeManual = new TypeLoan(
+                "TYPE-1", "PERSONAL",
+                new Money(new BigDecimal("1000")),
+                new Money(new BigDecimal("5000")),
+                new InterestRate(new BigDecimal("0.02")),
+                false // <- manual
+        );
         var pending = state(UUID.randomUUID().toString(), LoanUseCase.DEFAULT_PENDING_STATE_NAME);
 
         var saved = loan(email, typeId, new BigDecimal("3000"), 12, pending.id());
 
         when(customerGw.existsByEmail(email)).thenReturn(Mono.just(true));
-        when(typeRepo.findById(UUID.fromString(typeId))).thenReturn(Mono.just(type));
+        when(typeRepo.findById(UUID.fromString(typeId))).thenReturn(Mono.just(typeManual));
         when(stateRepo.findByName(LoanUseCase.DEFAULT_PENDING_STATE_NAME)).thenReturn(Mono.just(pending));
         when(loanRepo.save(any(Loan.class))).thenReturn(Mono.just(saved));
 
@@ -183,7 +190,132 @@ class LoanUseCaseTest {
         assertThat(captor.getValue().stateLoanId()).isEqualTo(pending.id());
     }
 
+    @Test
+    void create_happyPath_withAutoValidation_sendsDebtCapacityAndReturnsLoan() {
+        var email   = "ok@example.com";
+        var typeId  = UUID.randomUUID().toString();
+        var input   = loan(email, typeId, new BigDecimal("3000"), 12, null);
+
+        // type con automaticValidation=true (tu helper ya lo deja en true)
+        var type    = typeLoan(new BigDecimal("1000"), new BigDecimal("5000"));
+        var pending = state(UUID.randomUUID().toString(), LoanUseCase.DEFAULT_PENDING_STATE_NAME);
+
+        // Datos que devuelve el gateway
+        var userData = mock(UserData.class);
+        when(customerGw.findByEmail(email)).thenReturn(Mono.just(userData));
+
+        // Aprobados existentes (vía getListLoanApproved)
+        var approvedState = state(UUID.randomUUID().toString(), LoanUseCase.DEFAULT_APPROVED_STATE_NAME);
+        when(stateRepo.findByName(LoanUseCase.DEFAULT_APPROVED_STATE_NAME)).thenReturn(Mono.just(approvedState));
+
+        var la1 = mock(LoanApproved.class);
+        when(loanRepo.findByEmailAndStatusId(eq(email), eq(UUID.fromString(approvedState.id()))))
+                .thenReturn(Flux.just(la1));
+
+        // Guardado
+        var saved = loan(email, typeId, new BigDecimal("3000"), 12, pending.id());
+        when(typeRepo.findById(UUID.fromString(typeId))).thenReturn(Mono.just(type));
+        when(stateRepo.findByName(LoanUseCase.DEFAULT_PENDING_STATE_NAME)).thenReturn(Mono.just(pending));
+        when(loanRepo.save(any(Loan.class))).thenReturn(Mono.just(saved));
+        when(debtCapacitySQS.sendMessage(any(DebtCapacity.class))).thenReturn(Mono.empty());
+
+        StepVerifier.create(useCase.create(input))
+                .expectNext(saved)
+                .verifyComplete();
+
+        // Verificamos que sí se envió a SQS
+        verify(debtCapacitySQS).sendMessage(any(DebtCapacity.class));
+
+        // Y que consultó la lista de aprobados
+        verify(stateRepo).findByName(LoanUseCase.DEFAULT_APPROVED_STATE_NAME);
+        verify(loanRepo).findByEmailAndStatusId(eq(email), eq(UUID.fromString(approvedState.id())));
+    }
+
+    @Test
+    void create_happyPath_withManualValidation_doesNotSendSqs() {
+        var email   = "ok@example.com";
+        var typeId  = UUID.randomUUID().toString();
+        var input   = loan(email, typeId, new BigDecimal("3000"), 12, null);
+
+        var typeManual = new TypeLoan(
+                "TYPE-1", "PERSONAL",
+                new Money(new BigDecimal("1000")),
+                new Money(new BigDecimal("5000")),
+                new InterestRate(new BigDecimal("0.02")),
+                false // <- manual
+        );
+        var pending = state(UUID.randomUUID().toString(), LoanUseCase.DEFAULT_PENDING_STATE_NAME);
+        var saved   = loan(email, typeId, new BigDecimal("3000"), 12, pending.id());
+
+        when(typeRepo.findById(UUID.fromString(typeId))).thenReturn(Mono.just(typeManual));
+        when(stateRepo.findByName(LoanUseCase.DEFAULT_PENDING_STATE_NAME)).thenReturn(Mono.just(pending));
+        when(loanRepo.save(any(Loan.class))).thenReturn(Mono.just(saved));
+
+        StepVerifier.create(useCase.create(input))
+                .expectNext(saved)
+                .verifyComplete();
+
+        // NO se llama a SQS ni se consulta aprobados
+        verifyNoInteractions(debtCapacitySQS);
+        verify(loanRepo, never()).findByEmailAndStatusId(anyString(), any());
+    }
+
     // ---------------- tests de changeLoanStatus() ----------------
+
+    @Test
+    void changeLoanStatus_whenNewStateProvidedByName_usesFindByName() {
+        var typeId = UUID.randomUUID().toString();
+        var existing = loan("u@e.com", typeId, new BigDecimal("2500"), 18, "STATE-OLD");
+
+        var newState = state(UUID.randomUUID().toString(), "APPROVED");
+        var cmd = change(existing.id(), "APPROVED", "reason-by-name");
+
+        var updated = new Loan(existing.id(), existing.amount(), existing.termMonths(),
+                existing.email(), newState.id(), existing.typeLoanId());
+
+        var type = new TypeLoan(typeId, "Libre Inversión",
+                new Money(new BigDecimal("1000")), new Money(new BigDecimal("10000")),
+                new InterestRate(new BigDecimal("0.015")), true);
+
+        var customer = mock(UserData.class);
+
+        when(loanRepo.findById(UUID.fromString(cmd.loanId()))).thenReturn(Mono.just(existing));
+        when(stateRepo.findById(any())).thenReturn(Mono.never()); // que no entre por aquí
+        when(stateRepo.findByName("APPROVED")).thenReturn(Mono.just(newState));
+        when(loanRepo.save(any(Loan.class))).thenReturn(Mono.just(updated));
+        when(stateRepo.findById(UUID.fromString(updated.stateLoanId()))).thenReturn(Mono.just(newState));
+        when(typeRepo.findById(UUID.fromString(updated.typeLoanId()))).thenReturn(Mono.just(type));
+        when(customerGw.findByEmail(updated.email().value())).thenReturn(Mono.just(customer));
+
+        StepVerifier.create(useCase.changeLoanStatus(cmd))
+                .assertNext(changed -> {
+                    assertThat(changed.loan()).isEqualTo(updated);
+                    assertThat(changed.stateName()).isEqualTo("APPROVED");
+                    assertThat(changed.typeName()).isEqualTo("Libre Inversión");
+                    assertThat(changed.reason()).isEqualTo("reason-by-name");
+                    assertThat(changed.userData()).isEqualTo(customer);
+                })
+                .verifyComplete();
+
+        // Verificamos que usó findByName y no forzó UUID:
+        verify(stateRepo).findByName("APPROVED");
+    }
+
+    @Test
+    void changeLoanStatus_whenStateNameNotFound_emitsDomainNotFound() {
+        var existing = loan("u@e.com", UUID.randomUUID().toString(), new BigDecimal("2000"), 10, "STATE-OLD");
+        var cmd = change(existing.id(), "NOT_EXISTS", "reason-x");
+
+        when(loanRepo.findById(UUID.fromString(cmd.loanId()))).thenReturn(Mono.just(existing));
+        when(stateRepo.findByName("NOT_EXISTS")).thenReturn(Mono.empty());
+
+        StepVerifier.create(useCase.changeLoanStatus(cmd))
+                .expectError(DomainNotFoundException.class)
+                .verify();
+
+        verify(stateRepo).findByName("NOT_EXISTS");
+    }
+
 
     @Test
     void changeLoanStatus_whenLoanMissing_emitsDomainNotFound() {
@@ -265,7 +397,6 @@ class LoanUseCaseTest {
         verify(loanRepo).save(captor.capture());
         assertThat(captor.getValue().stateLoanId()).isEqualTo(newState.id());
 
-        verifyNoInteractions(notification); // el método aún no envía notificaciones
     }
 
     // ---------------- tests de execute() y getAllLoans() ----------------

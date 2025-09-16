@@ -2,6 +2,7 @@ package co.com.crediya.r2dbc.loan;
 
 import co.com.crediya.model.customer.gateways.CustomerGateway;
 import co.com.crediya.model.loan.Loan;
+import co.com.crediya.model.loan.LoanApproved;
 import co.com.crediya.model.loan.gateways.LoanRepository;
 import co.com.crediya.model.pageable.LoanStatus;
 import co.com.crediya.model.pageable.LoanSummary;
@@ -53,6 +54,12 @@ public class LoanReactiveRepositoryAdapter extends ReactiveAdapterOperations<
     }
 
     @Override public Mono<Loan> findById(UUID id) { return repository.findById(id).map(entityMapper::toDomain); }
+
+    @Override
+    public Flux<LoanApproved> findByEmailAndStatusId(String email, UUID statusId) {
+        return repository.findByEmailAndStateLoanId(email, statusId);
+    }
+
     @Override public Flux<Loan> findAll() { return repository.findAll().map(entityMapper::toDomain); }
 
     @Override

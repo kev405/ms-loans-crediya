@@ -1,5 +1,6 @@
 package co.com.crediya.r2dbc.loan;
 
+import co.com.crediya.model.loan.LoanApproved;
 import co.com.crediya.model.pageable.LoanSummary;
 import co.com.crediya.r2dbc.loan.entity.LoanEntity;
 import reactor.core.publisher.Flux;
@@ -76,4 +77,19 @@ public interface LoanReactiveRepository extends ReactiveCrudRepository<LoanEntit
             @Param("minAmount") BigDecimal minAmount,
             @Param("maxAmount") BigDecimal maxAmount
     );
+
+    @Query("""
+        SELECT l.id,
+               l.amount,
+               l.term_months                               AS term_months,
+               l.email                                      AS applicant_email,
+               tl.name                                      AS type_loan_name,
+               tl.annual_interest_percent::numeric  AS annual_interest_rate
+        FROM loan l
+        JOIN loan_type  tl ON tl.id = l.id_type_loan
+        WHERE l.email = :email
+          AND l.id_state_loan = :stateLoanId
+        ORDER BY l.created_at DESC
+    """)
+    Flux<LoanApproved> findByEmailAndStateLoanId(String email, UUID statusId);
 }
