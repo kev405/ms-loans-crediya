@@ -8,6 +8,7 @@ import co.com.crediya.model.loan.*;
 import co.com.crediya.model.loan.gateways.DebtCapacitySQS;
 import co.com.crediya.model.loan.gateways.LoanRepository;
 import co.com.crediya.model.loan.gateways.Notification;
+import co.com.crediya.model.loan.gateways.ReportSQS;
 import co.com.crediya.model.pageable.LoanSummary;
 import co.com.crediya.model.pageable.ManualReviewFilter;
 import co.com.crediya.model.pageable.Pageable;
@@ -46,13 +47,14 @@ class LoanUseCaseTest {
     StateLoanRepository stateRepo= mock(StateLoanRepository.class);
     CustomerGateway customerGw   = mock(CustomerGateway.class);
     DebtCapacitySQS debtCapacitySQS = mock(DebtCapacitySQS.class);
+    ReportSQS reportSQS  = mock(ReportSQS.class);
     TxRunner txRunner            = mock(TxRunner.class);
 
     LoanUseCase useCase;
 
     @BeforeEach
     void setUp() {
-        useCase = new LoanUseCase(loanRepo, typeRepo, stateRepo, customerGw, debtCapacitySQS, txRunner);
+        useCase = new LoanUseCase(loanRepo, typeRepo, stateRepo, customerGw, debtCapacitySQS, reportSQS, txRunner);
 
         // TxRunner passthrough
         when(txRunner.required(any())).thenAnswer(inv -> ((Supplier<Mono<?>>)inv.getArgument(0)).get());

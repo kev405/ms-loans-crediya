@@ -33,3 +33,4 @@ adapter:
     region: "us-east-2"
     queueUrlNotification: "https://sqs.us-east-2.amazonaws.com/328764941205/NOTIFICATION"
     queueUrlDebtCapacity: "https://sqs.us-east-2.amazonaws.com/328764941205/DebtCapacity"
+    queueUrlReport: "https://sqs.us-east-2.amazonaws.com/328764941205/REPORT"
