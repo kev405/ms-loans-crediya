@@ -7,6 +7,7 @@ import co.com.crediya.model.exceptions.DomainValidationException;
 import co.com.crediya.model.loan.*;
 import co.com.crediya.model.loan.gateways.DebtCapacitySQS;
 import co.com.crediya.model.loan.gateways.LoanRepository;
+import co.com.crediya.model.loan.gateways.ReportSQS;
 import co.com.crediya.model.pageable.LoanSummary;
 import co.com.crediya.model.pageable.ManualReviewFilter;
 import co.com.crediya.model.pageable.Pageable;
@@ -35,6 +36,8 @@ public class LoanUseCase {
     private final CustomerGateway customerGateway;
 
     private final DebtCapacitySQS debtCapacitySQS;
+
+    private final ReportSQS reportSQS;
 
     private final TxRunner txRunner;
 
@@ -65,7 +68,7 @@ public class LoanUseCase {
                             StateLoan pendingState = tuple.getT2();
 
                             return validateAmountInRange(loan,
-                                    type)        // <- encadenado
+                                    type)
                                     .then(Mono.defer(() -> {
                                         if (type.automaticValidation()) {
                                             Mono<UserData> userDataMono =
@@ -167,9 +170,23 @@ public class LoanUseCase {
                                         .map(TypeLoan::name),
                                 customerGateway.findByEmail(
                                         saved.email().value())
-                        ).map(t -> new LoanStatusChanged(saved, t.getT1(),
-                                t.getT2(),
-                                changeLoanStatus.reason(), t.getT3()))
+                        ).map(t -> {
+
+                            if (t.getT1().equals(DEFAULT_APPROVED_STATE_NAME)) {
+                                // Enviar mensaje a SQS para reporte
+                                var reportMessage = new ReportMessage(
+                                        saved.amount().value());
+                                reportSQS.sendMessage(reportMessage)
+                                        .subscribe(
+                                                null,
+                                                error -> log.severe("Error sending report message to SQS: " + error.getMessage()),
+                                                () -> log.info("Report message sent to SQS successfully.")
+                                        );
+                            }
+                            return new LoanStatusChanged(saved, t.getT1(),
+                                    t.getT2(),
+                                    changeLoanStatus.reason(), t.getT3());
+                        })
                 ));
     }
 

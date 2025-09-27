@@ -22,10 +22,10 @@ management:
         enabled: true
 routes:
   paths:
-    loans: "/api/v1/loans"
-    loansById: "/api/v1/loans/{id}"
-    loansPageable: "/api/v1/loans/pageable"
-    loansChangeStatus: "/api/v1/loans/change-status"
+    loans: "/loans/api/v1/loans"
+    loansById: "/loans/api/v1/loans/{id}"
+    loansPageable: "/loans/api/v1/loans/pageable"
+    loansChangeStatus: "/loans/api/v1/loans/change-status"
 springdoc:
   api-docs:
     path: "/v3/api-docs"

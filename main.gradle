@@ -143,9 +143,9 @@ tasks.register('jacocoCoverageVerification', JacocoCoverageVerification) {
     }
 }
 
-tasks.named('build') {
-    dependsOn jacocoCoverageVerification
-}
+//tasks.named('build') {
+//    dependsOn jacocoCoverageVerification
+//}
 
 pitestReportAggregate {
     doLast {

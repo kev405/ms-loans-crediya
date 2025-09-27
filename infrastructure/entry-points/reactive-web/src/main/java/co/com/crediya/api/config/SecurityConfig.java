@@ -23,9 +23,9 @@ class SecurityConfig {
                 .authorizeExchange(ex -> ex
                         .pathMatchers("/webjars/swagger-ui/**", "/v3/api-docs/**",
                                 "/actuator/health").permitAll()
-                        .pathMatchers(HttpMethod.POST, "/api/v1/loans").hasRole("CUSTOMER")
-                        .pathMatchers(HttpMethod.POST, "/api/v1/loans/change-status").hasRole("ADVISOR")
-                        .pathMatchers(HttpMethod.GET, "/api/v1/loans/pageable").hasAnyRole("ADVISOR", "ADMIN")
+                        .pathMatchers(HttpMethod.POST, "/loans/api/v1/loans").hasRole("CUSTOMER")
+                        .pathMatchers(HttpMethod.POST, "/loans/api/v1/loans/change-status").hasRole("ADVISOR")
+                        .pathMatchers(HttpMethod.GET, "/loans/api/v1/loans/pageable").hasAnyRole("ADVISOR", "ADMIN")
                         .anyExchange().authenticated())
                 .oauth2ResourceServer(oauth -> oauth.jwt(j -> j.jwtAuthenticationConverter(jwtConverter)))
                 .build();
